@@ -1,0 +1,37 @@
+#        _    _
+#    ___| |  | |_   _  __ _  __ _ _ __ 
+#   / _ \ |  | | | | |/ _` |/ _` | '__|
+#  |  __/ |  | | |_| | (_| | (_| | |
+#   \___|_|  |_|\__,_|\__, |\__,_|_|
+#                       (__|
+# 
+#  Copyright (C) 2026 rodrigo amestica
+#  SPDX-License-Identifier: Apache-2.0
+
+FROM ubuntu:24.04
+
+ARG DEBIAN_FRONTEND=noninteractive
+
+USER root
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        openssh-server \
+        sudo \
+    && rm -rf /var/lib/apt/lists/*
+
+# sshd needs this directory to exist
+RUN mkdir /var/run/sshd
+
+# Disable password auth; require key-based login only
+RUN sed -i \
+        -e 's/^#\?PasswordAuthentication.*/PasswordAuthentication no/' \
+        -e 's/^#\?ChallengeResponseAuthentication.*/ChallengeResponseAuthentication no/' \
+        -e 's/^#\?UsePAM.*/UsePAM no/' \
+        /etc/ssh/sshd_config
+
+COPY bin/devenv_entrypoint /devenv_entrypoint
+RUN chmod +x /devenv_entrypoint
+
+EXPOSE 22
+
+ENTRYPOINT ["/devenv_entrypoint"]

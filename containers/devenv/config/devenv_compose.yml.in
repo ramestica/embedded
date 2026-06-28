@@ -1,0 +1,26 @@
+# export UID=$(id -u)
+# export GID=$(id -g)
+# export SSH_PUBKEY="$(cat ~/.ssh/id_ed25519.pub)"
+# export WORKDIR="$HOME/projects/myproject"
+# 
+# docker compose up --build -d
+# ssh -p 2222 $USER@localhost
+
+services:
+  devenv:
+    image: devenv:latest
+    build:
+      context: @CMAKE_BINARY_DIR@
+      dockerfile: @CMAKE_BINARY_DIR@/config/Dockerfile.devenv
+    ports:
+      - "${SSH_USER_PORT}:22" # host_port:container_port — change host side as needed
+    environment:
+      HOST_USER: "${USER}"
+      HOST_UID:  "${UID}"
+      HOST_GID:  "${GID}"
+    volumes:
+      - "${HOME}/.ssh/authorized_keys:/home/${USER}/.ssh/authorized_keys:ro"
+      - "${USER_SANDBOX}:/home/${USER}/sandbox"
+    restart: unless-stopped
+
+#___oOo___

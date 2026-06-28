@@ -1,18 +1,36 @@
 # embedded/CMakeLists.txt
-cmake_minimum_required(VERSION 3.22)
+cmake_minimum_required(VERSION 3.25)
 
-# Only declare a project if we're the top-level build
-# (i.e. not consumed as a subdirectory by a parent project)
-if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
-    project(Embedded VERSION 1.0 LANGUAGES CXX)
-    list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
-    include(ModuleMacros)
-    include(GNUInstallDirs)
-    enable_testing()
-endif()
+project(
+    embedded
+    VERSION 1.0.0
+    LANGUAGES C CXX
+)
 
-add_subdirectory(hal)
-add_subdirectory(drivers)
-add_subdirectory(utils)
+set(EMB_CONFIG_DIR "${CMAKE_BINARY_DIR}/config")
+
+list(APPEND CMAKE_MODULE_PATH
+    ${CMAKE_CURRENT_SOURCE_DIR}/cmake
+)
+
+include(helpers)
+
+include(module)
+include(library)
+include(executable)
+include(script)
+include(config)
+include(container)
+include(uv)
+
+include(GNUInstallDirs)
+
+enable_testing()
+
+#
+# Modules
+#
+
+add_subdirectory(containers/devenv)
 
 #___oOo___
