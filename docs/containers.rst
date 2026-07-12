@@ -58,3 +58,41 @@ Vefiry it works:
                 
    docker run --rm xilinx-ise:14.7 \ bash -c "source /opt/Xilinx/14.7/ISE_DS/settings64.sh && xst --help"
 
+Orchestrated setup and workflow sequencing strategy
+---------------------------------------------------
+
+Here's the full sequence, in order, from a fresh clone:
+
+1. First-time bootstrap — generate the lockfiles (only needed once, or whenever dependencies change):
+bashmake update-lockfiles
+This builds devenv:lockgen (via lockgen-image), then generates containers/devenv/config/uv.lock and conan.lock at the repo root, writing them back to your host through the bind mount. Commit both files:
+bashgit add containers/devenv/config/uv.lock conan.lock
+git commit -m "Add generated uv.lock and conan.lock"
+
+2. Build the real devenv image (now that the lockfiles it depends on exist):
+bashmake all
+This runs cmake --build build/Release --parallel 12, which drives cmake --build build/Release --target devenv_image under the hood via your emb_container/emb_module machinery — building the devenv stage of Dockerfile.devenv, consuming uv.lock/conan.lock in frozen/pinned mode.
+
+3. Launch the container:
+bashbuild/Release/bin/start_devenv_container -s ~/src
+
+4. Inside the container, on first login, Conan profiles (default, cortex-m4) and the Python venv are already active. For C/C++ work:
+
+bash# Host build
+conan install . --profile:build=default --profile:host=default \
+    -s build_type=Release --lockfile=conan.lock --build=missing
+cmake --preset conan-release
+cmake --build --preset conan-release
+
+# Cross build for TM4C123GXL
+conan install . --profile:build=default --profile:host=cortex-m4 \
+    -s build_type=Release --lockfile=conan.lock --build=missing
+cmake --preset conan-release-cortex-m4   # confirm exact name via `cmake --list-presets`
+cmake --build --preset conan-release-cortex-m4
+Ongoing workflow after the first bootstrap:
+
+Changing Python deps → edit pyproject.toml → make update-lockfiles → make all (rebuild image) → commit updated uv.lock.
+Changing C/C++ deps → edit conanfile.py → make update-lockfiles → commit updated conan.lock (image itself doesn't need rebuilding for this, since conan install --lockfile happens at first login inside the running container, not at image-build time).
+Day-to-day, once everything's bootstrapped: just make all + start_devenv_container — update-lockfiles is a deliberate, occasional step, not part of the normal build loop.
+
+One thing worth deciding: do you want make all to depend on the lockfiles existing (fail early with a clear message if uv.lock/conan.lock are missing), or leave it as-is where a missing lockfile just surfaces as a COPY failure deep in the Docker build? I can add a cheap existence-check target if you'd like a clearer first-time-setup error message.

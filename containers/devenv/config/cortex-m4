@@ -1,0 +1,19 @@
+[settings]
+os=baremetal
+arch=armv7
+compiler=gcc
+compiler.version=13
+compiler.libcxx=libstdc++
+build_type=Release
+
+[buildenv]
+CC=arm-none-eabi-gcc
+CXX=arm-none-eabi-g++
+AR=arm-none-eabi-ar
+STRIP=arm-none-eabi-strip
+
+[conf]
+tools.cmake.cmaketoolchain:generator=Ninja
+tools.build:cflags=["-mcpu=cortex-m4", "-mthumb", "-mfloat-abi=hard", "-mfpu=fpv4-sp-d16"]
+tools.build:cxxflags=["-mcpu=cortex-m4", "-mthumb", "-mfloat-abi=hard", "-mfpu=fpv4-sp-d16"]
+tools.build:exelinkflags=["-mcpu=cortex-m4", "-mthumb", "-mfloat-abi=hard", "-mfpu=fpv4-sp-d16", "--specs=nano.specs"]

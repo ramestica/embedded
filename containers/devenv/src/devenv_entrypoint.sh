@@ -10,12 +10,10 @@
 
 set -euo pipefail
 
-# ── Required env vars ────────────────────────────────────────────────────────
 : "${HOST_USER:?HOST_USER must be set}"
 : "${HOST_UID:?HOST_UID must be set}"
 : "${HOST_GID:?HOST_GID must be set}"
 
-# ── Create group / user matching the host ────────────────────────────────────
 groupadd --gid "${HOST_GID}" "${HOST_USER}" 2>/dev/null || true
 useradd  --uid "${HOST_UID}" \
          --gid "${HOST_GID}" \
@@ -24,11 +22,31 @@ useradd  --uid "${HOST_UID}" \
          --shell /bin/bash \
          "${HOST_USER}" 2>/dev/null || true
 
-# Grant passwordless sudo (optional — remove if not needed)
+cp -rn /etc/skel/. "/home/${HOST_USER}/" 2>/dev/null || true
+
+for entry in /etc/skel/.[!.]* /etc/skel/*; do
+    name="$(basename "$entry")"
+    target="/home/${HOST_USER}/${name}"
+    [ -e "$target" ] && chown -R "${HOST_UID}:${HOST_GID}" "$target"
+done
+
+# Seed a per-user, writable Conan cache from the baked shared cache via
+# hardlink copy: instant, zero extra disk for unchanged files, and every
+# new package the user builds writes independently without touching the
+# shared original.
+USER_CONAN_HOME="/home/${HOST_USER}/.conan2"
+if [ ! -d "${USER_CONAN_HOME}" ]; then
+    cp -al /usr/local/share/conan2 "${USER_CONAN_HOME}"
+    chown -R "${HOST_UID}:${HOST_GID}" "${USER_CONAN_HOME}"
+fi
+
+sed -i "1iexport USER_SANDBOX=/home/${HOST_USER}/sandbox" "/home/${HOST_USER}/.bashrc"
+
+usermod -p '*' "${HOST_USER}"
+
 echo "${HOST_USER} ALL=(ALL) NOPASSWD:ALL" > "/etc/sudoers.d/${HOST_USER}"
 chmod 0440 "/etc/sudoers.d/${HOST_USER}"
 
-# ── Start sshd in the foreground ─────────────────────────────────────────────
 exec /usr/sbin/sshd -D -e
 
 #___oOo___

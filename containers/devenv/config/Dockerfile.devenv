@@ -1,37 +1,137 @@
 #        _    _
-#    ___| |  | |_   _  __ _  __ _ _ __ 
+#    ___| |  | |_   _  __ _  __ _ _ __
 #   / _ \ |  | | | | |/ _` |/ _` | '__|
 #  |  __/ |  | | |_| | (_| | (_| | |
 #   \___|_|  |_|\__,_|\__, |\__,_|_|
 #                       (__|
-# 
+#
 #  Copyright (C) 2026 rodrigo amestica
 #  SPDX-License-Identifier: Apache-2.0
 
-FROM ubuntu:24.04
-
-ARG DEBIAN_FRONTEND=noninteractive
-
-USER root
+# ============================================================================
+# Stage: base — packages and toolchains common to both lockgen and devenv
+# ============================================================================
+FROM ubuntu:24.04 AS base
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        openssh-server \
-        sudo \
+    openssh-server \
+    sudo \
+    tree \
+    tmux \
+    vim \
+    build-essential \
+    cmake \
+    ninja-build \
+    gdb \
+    pkg-config \
+    ca-certificates \
+    curl \
+    git \
+    openocd \
     && rm -rf /var/lib/apt/lists/*
 
-# sshd needs this directory to exist
 RUN mkdir /var/run/sshd
 
-# Disable password auth; require key-based login only
 RUN sed -i \
-        -e 's/^#\?PasswordAuthentication.*/PasswordAuthentication no/' \
-        -e 's/^#\?ChallengeResponseAuthentication.*/ChallengeResponseAuthentication no/' \
-        -e 's/^#\?UsePAM.*/UsePAM no/' \
-        /etc/ssh/sshd_config
+    -e 's/^#\?PasswordAuthentication.*/PasswordAuthentication no/' \
+    -e 's/^#\?ChallengeResponseAuthentication.*/ChallengeResponseAuthentication no/' \
+    /etc/ssh/sshd_config
+
+# ARM bare-metal cross toolchain (Cortex-M4F, TM4C123GXL)
+ARG ARM_GNU_TOOLCHAIN_VERSION=13.3.rel1
+RUN curl -fsSL \
+    "https://developer.arm.com/-/media/Files/downloads/gnu/${ARM_GNU_TOOLCHAIN_VERSION}/binrel/arm-gnu-toolchain-${ARM_GNU_TOOLCHAIN_VERSION}-aarch64-arm-none-eabi.tar.xz" \
+    -o /tmp/arm-toolchain.tar.xz \
+    && mkdir -p /opt/arm-gnu-toolchain \
+    && tar -xf /tmp/arm-toolchain.tar.xz -C /opt/arm-gnu-toolchain --strip-components=1 \
+    && rm /tmp/arm-toolchain.tar.xz
+ENV PATH="/opt/arm-gnu-toolchain/bin:${PATH}"
+# SSH login sessions don't inherit Docker ENV, so PATH also needs to
+# be written to /etc/environment, which PAM applies to every login
+# session regardless of shell startup files.
+RUN echo 'PATH="/opt/arm-gnu-toolchain/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"' > /etc/environment
+
+# uv: system-wide install
+ENV UV_INSTALL_DIR=/usr/local/bin
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Every uv-provisioned Python (project venv AND tool venvs like Conan's)
+# must land under a system path we control and can chmod for all users.
+ENV UV_PYTHON_INSTALL_DIR=/usr/local/share/uv/python
+
+# Conan 2: system-wide via uv tool
+ENV UV_TOOL_DIR=/usr/local/share/uv/tools \
+    UV_TOOL_BIN_DIR=/usr/local/bin
+RUN uv tool install "conan>=2.0,<3.0"
+
+ARG EMBEDDED_PYTHON_VERSION=3.12
+RUN uv python install "${EMBEDDED_PYTHON_VERSION}"
+
+# ============================================================================
+# Stage: lockgen — everything needed to GENERATE uv.lock / conan.lock.
+# No lockfiles are copied in; meant to be `docker run` against a bind-mounted
+# repo, not launched standalone.
+# ============================================================================
+FROM base AS lockgen
+
+COPY profiles/cortex-m4 /root/.conan2-seed-profiles/cortex-m4
+
+CMD ["/bin/bash"]
+
+# ============================================================================
+# Stage: devenv — the real image. Consumes committed lockfiles in frozen mode,
+# and pre-warms the Conan package cache so `conan install` at login is fast.
+# ============================================================================
+FROM base AS devenv
 
 COPY bin/devenv_entrypoint /devenv_entrypoint
 RUN chmod +x /devenv_entrypoint
 
-EXPOSE 22
+# ---- Python FIRST: pinned interpreter + venv from pyproject.toml/uv.lock ----
+COPY config/pyproject.toml /opt/venvs/embedded-src/pyproject.toml
+COPY config/uv.lock        /opt/venvs/embedded-src/uv.lock
 
+ENV UV_PROJECT_ENVIRONMENT=/opt/venvs/embedded
+
+RUN cd /opt/venvs/embedded-src \
+    && uv sync --frozen --python "${EMBEDDED_PYTHON_VERSION}" \
+    && rm -rf /opt/venvs/embedded-src/pyproject.toml /opt/venvs/embedded-src/uv.lock
+
+RUN chmod -R a+rX /opt/venvs/embedded /usr/local/share/uv/python /usr/local/share/uv/tools
+
+# Put the venv's bin/ ahead of system paths for every subsequent RUN, so
+# Conan-driven CMake configure steps (find_package(Python3)) resolve to the
+# uv-managed interpreter -- important for anything linking pybind11 -- rather
+# than the system apt python3 installed above.
+ENV PATH="/opt/venvs/embedded/bin:${PATH}"
+
+# ---- Conan: system-wide, shared package cache (now sees the venv Python) ----
+ENV CONAN_HOME=/usr/local/share/conan2
+RUN echo 'export CONAN_HOME=$HOME/.conan2' >> /etc/skel/.bashrc
+
+RUN conan profile detect --force
+COPY config/cortex-m4 /usr/local/share/conan2/profiles/cortex-m4
+
+COPY config/conanfile.py /opt/conan-warm/conanfile.py
+COPY config/conan.lock    /opt/conan-warm/conan.lock
+
+RUN cd /opt/conan-warm \
+    && conan install . --profile:build=default --profile:host=default \
+         -s build_type=Release --lockfile=conan.lock --build=missing \
+    && conan install . --profile:build=default --profile:host=cortex-m4 \
+         -s build_type=Release --lockfile=conan.lock --build=missing \
+    && cd / \
+    && rm -rf /opt/conan-warm
+
+RUN chmod -R a+rX /usr/local/share/conan2
+
+# ---- Login shell defaults for every future user ----
+RUN echo '[ -f /opt/venvs/embedded/bin/activate ] && . /opt/venvs/embedded/bin/activate' \
+        >> /etc/skel/.profile \
+    && echo 'export PATH="$HOME/.local/bin:$PATH"' \
+        >> /etc/skel/.profile
+
+EXPOSE 22
 ENTRYPOINT ["/devenv_entrypoint"]
+
+#___oOo___

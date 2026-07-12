@@ -1,25 +1,23 @@
-# export UID=$(id -u)
-# export GID=$(id -g)
-# export SSH_PUBKEY="$(cat ~/.ssh/id_ed25519.pub)"
-# export WORKDIR="$HOME/projects/myproject"
-# 
-# docker compose up --build -d
-# ssh -p 2222 $USER@localhost
-
 services:
   devenv:
     image: devenv:latest
+    container_name: devenv-${USER}
+    hostname: devenv
     build:
       context: @CMAKE_BINARY_DIR@
       dockerfile: @CMAKE_BINARY_DIR@/config/Dockerfile.devenv
+      platforms:
+        - @DEVENV_TARGET_PLATFORM@
     ports:
-      - "${SSH_USER_PORT}:22" # host_port:container_port — change host side as needed
+      - "${SSH_USER_PORT}:22"
     environment:
       HOST_USER: "${USER}"
       HOST_UID:  "${UID}"
       HOST_GID:  "${GID}"
+      USER_SANDBOX: "${USER_SANDBOX}"
     volumes:
-      - "${HOME}/.ssh/authorized_keys:/home/${USER}/.ssh/authorized_keys:ro"
+      - "${HOME}/.ssh:/home/${USER}/.ssh:ro"
+      - "/Users/ramestica/src/github/ramestica/embedded/build/Release/.known_hosts:/home/${USER}/.ssh/known_hosts"
       - "${USER_SANDBOX}:/home/${USER}/sandbox"
     restart: unless-stopped
 

@@ -13,38 +13,24 @@ emb_module(
     TITLE "Development environment container image"
 )
 
-#
-# Optional generated config file
-#
-emb_config(
-    INPUT  config/devenv_compose.yml.in
-    OUTPUT devenv_compose.yml
-)
+file(TOUCH "${CMAKE_BINARY_DIR}/.known_hosts")
 
-emb_config(
-    INPUT config/Dockerfile.devenv
-)
+emb_config(INPUT config/conanfile.py)
 
-#
-# Scripts belonging to this module
-#
-emb_script(
-    FILE src/devenv_entrypoint.sh
-)
+emb_config(INPUT config/conan.lock)
 
-emb_script(FILE src/start_devenv_container.sh.in)
+emb_script(FILE src/devenv_entrypoint.sh)
 
-#
-# Container build target
-#
-emb_container(
-    NAME image
-    COMMAND ${CMAKE_BINARY_DIR}/bin/start_devenv_container
-)
+emb_script(FILE src/start_devenv_container.sh)
 
-#
-# (Optional) install raw config files if needed
-#
-emb_config(
-    INPUT  config/Dockerfile.devenv
-)
+emb_config(INPUT config/devenv_compose.yml.in)
+
+emb_config(INPUT config/Dockerfile.devenv)
+
+emb_config(INPUT config/pyproject.toml)
+
+emb_config(INPUT config/uv.lock)
+
+emb_config(INPUT config/cortex-m4)
+
+#___oOo___
