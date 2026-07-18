@@ -80,9 +80,7 @@ fi
 if [ -z "${UID:-}" ]; then
     UID=$(id -u)
 fi
-if [ -z "${GID:-}" ]; then
-    GID=$(id -g)
-fi
+GID=2000
 export UID GID
 
 if [[ ! -v ssh_ports[$USER] ]]; then

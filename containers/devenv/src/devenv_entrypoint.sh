@@ -14,13 +14,15 @@ set -euo pipefail
 : "${HOST_UID:?HOST_UID must be set}"
 : "${HOST_GID:?HOST_GID must be set}"
 
-groupadd --gid "${HOST_GID}" "${HOST_USER}" 2>/dev/null || true
+groupadd --gid "${HOST_GID}" ${HOST_USER} 2>/dev/null || true
 useradd  --uid "${HOST_UID}" \
          --gid "${HOST_GID}" \
          --home-dir "/home/${HOST_USER}" \
          --create-home \
          --shell /bin/bash \
          "${HOST_USER}" 2>/dev/null || true
+
+chown "$HOST_UID:$HOST_GID" "/home/$HOST_USER"
 
 cp -rn /etc/skel/. "/home/${HOST_USER}/" 2>/dev/null || true
 
