@@ -1,0 +1,30 @@
+############ RAM Embeeded Software () ############
+INTROOT=
+../include/Makefile.mk:23: *** no TARGET defined.  Stop.
+############ RAM Embeeded Software () ############
+INTROOT=
+../include/Makefile.mk:24: *** no TARGET defined.  Stop.
+make[1]: Entering directory '/home/ramestica/sandbox/github/ramestica/embedded/application/Support/ErrorCodes/src'
+Makefile:8: /include/Makefile.mk: No such file or directory
+make[1]: *** No rule to make target '/include/Makefile.mk'.
+make[1]: Failed to remake makefile '/include/Makefile.mk'.
+make[1]: *** No rule to make target 'do_clean', needed by 'clean'.
+make[1]: Target 'clean' not remade because of errors.
+make[1]: *** No rule to make target 'do_all', needed by 'all'.
+make[1]: Target 'all' not remade because of errors.
+make[1]: *** No rule to make target 'do_install', needed by 'install'.
+make[1]: Target 'install' not remade because of errors.
+make[1]: Leaving directory '/home/ramestica/sandbox/github/ramestica/embedded/application/Support/ErrorCodes/src'
+### ==> FAILED support ! 
+make[1]: Entering directory '/home/ramestica/sandbox/github/ramestica/embedded/application/Support/Utils/src'
+Makefile:19: /include/Makefile.mk: No such file or directory
+make[1]: *** No rule to make target '/include/Makefile.mk'.
+make[1]: Failed to remake makefile '/include/Makefile.mk'.
+make[1]: *** No rule to make target 'do_clean', needed by 'clean'.
+make[1]: Target 'clean' not remade because of errors.
+make[1]: *** No rule to make target 'do_all', needed by 'all'.
+make[1]: Target 'all' not remade because of errors.
+make[1]: *** No rule to make target 'do_install', needed by 'install'.
+make[1]: Target 'install' not remade because of errors.
+make[1]: Leaving directory '/home/ramestica/sandbox/github/ramestica/embedded/application/Support/Utils/src'
+### ==> FAILED support ! 

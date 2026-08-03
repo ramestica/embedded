@@ -1,0 +1,12 @@
+from setuptools import setup
+
+setup(
+    name='ram',
+    version='0.1',
+    description='My home brewed python code.',
+    url='http://github.com/ramestica/pylib',
+    author='Rodrigo Amestica',
+    author_email='ramestica@gmail.com',
+    license='???',
+    packages=['utils,mathematics,embedded'],
+    zip_safe=False)

@@ -1,0 +1,52 @@
+#
+# copy this file to /etc/udev/rules.d and the execute
+# udevadm control --reload-rules
+#
+# My prefered device names
+#
+ACTION=="add", ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6001", ATTRS{serial}=="12FP0529", SYMLINK+="nano328p"
+ACTION=="add", ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6010", SYMLINK+="papilio"
+ACTION=="add", ATTRS{idVendor}=="1cbe", ATTRS{idProduct}=="00fd", SYMLINK+="tm4c123gh6pm"
+ACTION=="add", ATTRS{idVendor}=="1ab1", ATTRS{idProduct}=="0588", SYMLINK+="rigol1102e"
+ACTION=="add", ATTRS{idVendor}=="1366", ATTRS{idProduct}=="0101", SYMLINK+="jlink"
+ACTION=="add", ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6001", ATTRS{serial}=="A10137QK", SYMLINK+="xbee"
+ACTION=="add", ATTRS{idVendor}=="0765", ATTRS{idProduct}=="6008", SYMLINK+="i1studio"
+
+# make possible to wakeup from usb keyboard
+ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="1ea7", ATTRS{idProduct}==""0907 RUN+="/bin/sh -c 'echo enabled > /sys$env{DEVPATH}/power/wakeup'"
+
+#
+# USBTMC instruments
+# Rigol DS1100 – ID 1ab1:0588 Rigol Technologies DS1000 SERIES
+#
+# http://scruss.com/blog/tag/usbtmc/
+#
+SUBSYSTEMS=="usb", ACTION=="add", ATTRS{idVendor}=="1ab1", ATTRS{idProduct}=="0588", GROUP="usbtmc", MODE="0660"
+ATTRS{idVendor}=="1ab1", ATTRS{idProduct}=="0588", GROUP="users", MODE="0660"
+
+#
+# Stelaris launchpad
+#
+ATTRS{idVendor}=="1cbe", ATTRS{idProduct}=="00fd", GROUP="users", MODE="0660"
+ATTRS{idVendor}=="1cbe", ATTRS{idProduct}=="00fd", ENV{ID_MM_DEVICE_IGNORE}="1"
+ATTRS{idVendor}=="1cbe", ATTRS{idProduct}=="00fd", ENV{MTP_NO_PROBE}="1"
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="1cbe", ATTRS{idProduct}=="00fd", MODE:="0660"
+KERNEL=="ttyACM*", ATTRS{idVendor}=="1cbe", ATTRS{idProduct}=="00fd", MODE:="0660"
+
+#
+# Papilio-pro board
+#
+ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6010", GROUP="users", MODE="0660"
+
+#
+# j-link edu
+#
+ATTRS{idVendor}=="1366", ATTRS{idProduct}=="0101", GROUP="users", MODE="0660"
+
+# Gives write access for group “users” on the xlite Calibration USB device
+ATTRS{idVendor}=="0765", ATTRS{idProduct}=="6008", GROUP="users", MODE="0660"
+
+# Gives write access for group “users” on the hckrf USB device
+ATTRS{idVendor}=="1d50", ATTRS{idProduct}=="6089", GROUP="users", MODE="0660"
+
+#___oOo___

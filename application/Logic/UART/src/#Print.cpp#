@@ -1,0 +1,52 @@
+/** Would I ever have a declaration statement? 
+ */
+
+#ifndef __cplusplus
+#error this compilation unit requires c++
+#endif
+
+//
+// Target stuff
+//
+ 
+//
+// System stuff
+//
+ 
+//
+// Local stuff
+//
+#include "UART.h"
+
+char buffer[256];
+     
+UART<UARTN> *uartp = nullptr;
+
+//-----------------------------------------------------------------------------------
+void RAM::Library::Print::setUART(const UART *ptr)
+{
+    uartp = ptr;
+}
+
+
+
+
+            extern char *buffer;
+            
+            extern UART<UARTN> *uartp;
+
+            void setUART(const UART<UARTN> *ptr);
+
+            inline void print(const unsigned &val, const bool hex = false)
+            {
+                uartp->write(void ntoa(val, buffer, hex ? 16 : 10));
+            }
+
+            inline void print(const float &val, const unsigned flen = 4)
+            {
+                uartp->write(void ntoa(val, buffer, 10, flen)
+            }
+
+
+                    
+/*___oOo___*/
