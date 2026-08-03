@@ -12,12 +12,17 @@ services:
       - "${SSH_USER_PORT}:22"
     environment:
       HOST_USER: "${USER}"
+      HOST_GROUP: "${USER_GROUP}"
       HOST_UID:  "${UID}"
       HOST_GID:  "${GID}"
       USER_SANDBOX: "${USER_SANDBOX}"
     volumes:
       - "${HOME}/.ssh:/home/${USER}/.ssh:ro"
       - "/Users/ramestica/src/github/ramestica/embedded/build/Release/.known_hosts:/home/${USER}/.ssh/known_hosts"
+      - "${HOME}/.oh-my-zsh:/home/${USER}/.oh-my-zsh"
+      - "${HOME}/.zshenv:/home/${USER}/.zshenv"
+      - "${HOME}/.zshenv.devenv:/home/${USER}/.zshenv.devenv"
+      - "${HOME}/.zshrc:/home/${USER}/.zshrc"
       - "${USER_SANDBOX}:/home/${USER}/sandbox"
     restart: unless-stopped
 

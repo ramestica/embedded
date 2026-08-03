@@ -32,14 +32,15 @@ build: configure
 install: build
 	cmake --install $(BUILD_DIR)
 
-lockgen-image:
-	docker build --target lockgen -t devenv:lockgen -f containers/devenv/config/Dockerfile.devenv .
+lockgen-image: configure
+	docker build --target lockgen -t devenv:lockgen -f $(BUILD_DIR)/config/Dockerfile.devenv $(BUILD_DIR)
 
 update-lockfiles: lockgen-image
 	docker run --rm -v "$(CURDIR):/workspace" -w /workspace devenv:lockgen \
 	    bash -c "cd containers/devenv/config && uv lock"
 	docker run --rm -v "$(CURDIR):/workspace" -w /workspace devenv:lockgen \
 	    bash -c " \
+	        cd containers/devenv/config && \
 	        conan profile detect --force && \
 	        cp /root/.conan2-seed-profiles/cortex-m4 /root/.conan2/profiles/cortex-m4 && \
 	        conan lock create . --profile:build=default --profile:host=default --lockfile-out=conan.lock && \

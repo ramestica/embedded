@@ -14,15 +14,16 @@
 set -euo pipefail
 
 : "${HOST_USER:?HOST_USER must be set}"
+: "${HOST_GROUP:?HOST_GROUP must be set}"
 : "${HOST_UID:?HOST_UID must be set}"
 : "${HOST_GID:?HOST_GID must be set}"
 
-groupadd --gid "${HOST_GID}" ${HOST_USER} 2>/dev/null || true
+groupadd --gid "${HOST_GID}" ${HOST_GROUP} 2>/dev/null || true
 useradd  --uid "${HOST_UID}" \
          --gid "${HOST_GID}" \
          --home-dir "/home/${HOST_USER}" \
          --create-home \
-         --shell /bin/bash \
+         --shell /bin/zsh \
          "${HOST_USER}" 2>/dev/null || true
 
 chown "$HOST_UID:$HOST_GID" "/home/$HOST_USER"
@@ -45,7 +46,7 @@ if [ ! -d "${USER_CONAN_HOME}" ]; then
     chown -R "${HOST_UID}:${HOST_GID}" "${USER_CONAN_HOME}"
 fi
 
-sed -i "1iexport USER_SANDBOX=/home/${HOST_USER}/sandbox" "/home/${HOST_USER}/.bashrc"
+echo "export USER_SANDBOX=/home/${HOST_USER}/sandbox" > /etc/profile.d/00-devenv.sh
 
 usermod -p '*' "${HOST_USER}"
 

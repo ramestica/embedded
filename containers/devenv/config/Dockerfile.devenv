@@ -14,6 +14,10 @@
 FROM ubuntu:24.04 AS base
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    zsh \
+    curl \
+    iputils-ping \
+    wget \
     openssh-server \
     sudo \
     tree \
@@ -25,11 +29,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     gdb \
     pkg-config \
     ca-certificates \
-    curl \
     git \
     netcat-openbsd \
     openocd \
     && rm -rf /var/lib/apt/lists/*
+
+RUN FZF_VERSION=$(curl -s "https://api.github.com/repos/junegunn/fzf/releases/latest" | grep -Po '"tag_name": "v\K[0-9.]+') && \
+    curl -Lo fzf.tar.gz "https://github.com/junegunn/fzf/releases/latest/download/fzf-${FZF_VERSION}-linux_amd64.tar.gz" && \
+    tar -xzf fzf.tar.gz -C /usr/local/bin/ && \
+    rm fzf.tar.gz
 
 RUN mkdir /var/run/sshd
 
@@ -75,7 +83,7 @@ RUN uv python install "${EMBEDDED_PYTHON_VERSION}"
 # ============================================================================
 FROM base AS lockgen
 
-COPY profiles/cortex-m4 /root/.conan2-seed-profiles/cortex-m4
+COPY config/cortex-m4 /root/.conan2-seed-profiles/cortex-m4
 
 CMD ["/bin/bash"]
 
@@ -131,6 +139,13 @@ RUN echo '[ -f /opt/venvs/embedded/bin/activate ] && . /opt/venvs/embedded/bin/a
         >> /etc/skel/.profile \
     && echo 'export PATH="$HOME/.local/bin:$PATH"' \
         >> /etc/skel/.profile
+RUN cat >> /etc/zsh/zprofile <<'EOF'
+if [ -d /etc/profile.d ]; then
+  for i in /etc/profile.d/*.sh; do
+    [ -r "$i" ] && . "$i"
+  done
+fi
+EOF
 
 EXPOSE 22
 ENTRYPOINT ["/devenv_entrypoint"]

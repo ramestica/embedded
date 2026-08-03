@@ -8,6 +8,13 @@
 #  Copyright (C) 2026 rodrigo amestica
 #  SPDX-License-Identifier: Apache-2.0
 
+# a shared group between host and container; which makes possible
+# permissions sharing. on macos do the following 
+# sudo dseditgroup -o create -i 2000 -r "devenv container group" devenv
+# sudo dseditgroup -o edit -a ramestica -t user devenv
+ 
+set -euo pipefail
+
 GETOPT_BIN="getopt"
 if [[ "$OSTYPE" == "darwin"* ]]; then
     GETOPT_BIN="$(brew --prefix gnu-getopt)/bin/getopt"
@@ -31,7 +38,8 @@ EOF
 TEMP=$("$GETOPT_BIN" -o 's:h' --long 'sandbox:,help' -n "$0" -- "$@")
 
 # Check if getopt encountered an error
-if [ $? -ne 0 ]; then
+if [ $? -ne 0 ]
+then
     echo "Error parsing arguments. Use -h or --help for usage information." >&2
     exit 1
 fi
@@ -67,7 +75,8 @@ ssh_ports[ramestica]=8026
 
 export SSH_USER_PORT=${ssh_ports[$USER]}
 
-if [[ -z "${USER_SANDBOX:-}" ]]; then
+if [[ -z "${USER_SANDBOX:-}" ]]
+then
     echo "USER_SANDBOX is unset or empty"
     exit 1
 fi
@@ -77,16 +86,13 @@ then
     exit 1
 fi
 
-if [ -z "${UID:-}" ]; then
+if [ -z "${UID:-}" ]
+then
     UID=$(id -u)
 fi
+USER_GROUP=devenv
 GID=2000
-export UID GID
-
-if [[ ! -v ssh_ports[$USER] ]]; then
-    echo user=$USER not mapped to a ssh port number
-    exit 1
-fi
+export UID GID USER_GROUP
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")"/.. && pwd)"
 docker compose -f ${SCRIPT_DIR}/config/devenv_compose.yml up --build -d
