@@ -21,9 +21,7 @@ emb_config(INPUT config/conan.lock)
 
 emb_script(FILE src/devenv_entrypoint.sh)
 
-emb_script(FILE src/start_devenv_container.sh)
-
-emb_config(INPUT config/devenv_compose.yml.in)
+emb_script(FILE src/devenv_container.sh)
 
 emb_config(INPUT config/Dockerfile.devenv)
 

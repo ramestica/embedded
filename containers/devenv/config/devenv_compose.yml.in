@@ -21,7 +21,6 @@ services:
       - "/Users/ramestica/src/github/ramestica/embedded/build/Release/.known_hosts:/home/${USER}/.ssh/known_hosts"
       - "${HOME}/.oh-my-zsh:/home/${USER}/.oh-my-zsh"
       - "${HOME}/.zshenv:/home/${USER}/.zshenv"
-      - "${HOME}/.zshenv.devenv:/home/${USER}/.zshenv.devenv"
       - "${HOME}/.zshrc:/home/${USER}/.zshrc"
       - "${USER_SANDBOX}:/home/${USER}/sandbox"
     restart: unless-stopped

@@ -11,20 +11,6 @@ set(EMB_CONFIG_DIR "${CMAKE_BINARY_DIR}/config")
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
-# Determine target Docker platform for devenv container builds,
-# based on the host architecture running the build.
-if(CMAKE_HOST_SYSTEM_PROCESSOR MATCHES "^(arm64|aarch64)$")
-    set(DEVENV_TARGET_PLATFORM "linux/arm64")
-elseif(CMAKE_HOST_SYSTEM_PROCESSOR MATCHES "^(x86_64|AMD64|amd64)$")
-    set(DEVENV_TARGET_PLATFORM "linux/amd64")
-else()
-    message(WARNING
-        "Unrecognized host processor '${CMAKE_HOST_SYSTEM_PROCESSOR}' — "
-        "defaulting DEVENV_TARGET_PLATFORM to linux/amd64")
-    set(DEVENV_TARGET_PLATFORM "linux/amd64")
-endif()
-message(STATUS "devenv container target platform: ${DEVENV_TARGET_PLATFORM}")
-
 include(helpers)
 include(module)
 include(library)
