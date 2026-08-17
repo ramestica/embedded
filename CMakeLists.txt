@@ -28,5 +28,6 @@ enable_testing()
 # Modules
 #
 add_subdirectory(containers/devenv)
+add_subdirectory(application)
 
 #___oOo___

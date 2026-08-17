@@ -39,5 +39,9 @@ class EmbeddedConan(ConanFile):
     def generate(self):
         CMakeDeps(self).generate()
         tc = CMakeToolchain(self)
+        # Default prefix ("conan") produces the same "conan-<build_type>"
+        # preset name regardless of target, so host and cortex-m4 collide
+        # when both are included from the same CMakeUserPresets.json.
+        tc.presets_prefix = f"conan-{self._target_id()}"
         tc.generate()
-        
+

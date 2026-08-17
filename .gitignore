@@ -1,6 +1,9 @@
 __pycache__/
+.agent-shell/
 build/
 lib/
 bin/
 object/
 .cache/
+compile_commands.json
+CMakeUserPresets.json

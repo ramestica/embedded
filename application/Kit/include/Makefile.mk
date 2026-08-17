@@ -39,14 +39,14 @@ F_CPU_CYCLES_PER_US=80UL
 TARGET_INCLUDE=$(REPOROOT)/cmsis/core/CMSIS/Core/Include:$(REPOROOT)/cmsis/dsp/Include:$(REPOROOT)/tivaware
 # why stmcube distributes its own cmsis?
 #TARGET_INCLUDE=/home/ramestic/embedded/STM32Cube_FW_F4_V1.24.0/Drivers/CMSIS/Core/Include:/home/ramestic/embedded/STM32Cube_FW_F4_V1.24.0/Drivers/CMSIS/DSP/Include:$(TIVA_WARE_C_ROOT)
-BOARD_LIBS_PATH=$(TIVA_WARE_C_ROOT)/driverlib/gcc:$(CMSIS_ROOT)/CMSIS/DSP/Lib/GCC
+BOARD_LIBS_PATH=$(REPOROOT)/tivaware/driverlib/gcc:$(CMSIS_ROOT)/CMSIS/DSP/Lib/GCC
 #
 # board specific libraries contributed from somewhere else. Originally
 # I tried gcc's standard LIBRARY_PATH variable instead of my own
 # BOARD_LIBS_PATH. But it seems that arm-none-eabi-gcc replaces
 # LIBRARY_PATH by its own.
 #
-BOARD_LIBS = driver arm_cortexM4lf_math
+#BOARD_LIBS = driver arm_cortexM4lf_math
 else ifneq (,$(findstring $(TARGET),discovery))
 PROCESSOR=stm32f407vgt6
 F_CPU=168000000UL
