@@ -16,7 +16,7 @@
 //
 // Local stuff
 //
-#include "UART.h"
+#include <Logic/UART.h>
 
 using namespace std;
 using namespace RAM::Logic::UART;

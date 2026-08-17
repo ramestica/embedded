@@ -16,12 +16,12 @@
 //
 // Library stuff
 //
-#include <ErrorCodes.h>
+#include <Support/ErrorCodes.h>
 
 //
 // Local stuff
 //
-#include "PulseModulation.h"
+#include <Logic/PulseModulation.h>
 
 using namespace RAM::Logic::PulseModulation;
 

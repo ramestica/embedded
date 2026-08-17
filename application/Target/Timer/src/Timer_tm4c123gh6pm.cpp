@@ -6,13 +6,13 @@
 //
 //#include <timer.h>
 //
-#include <Interrupts.h>
-#include <GPIO.h>
+#include <Target/Interrupts.h>
+#include <Target/GPIO.h>
 
 //
 // Local stuff
 //
-#include "Timer.h"
+#include <Target/Timer.h>
 
 using namespace std;
 using namespace RAM::Target;

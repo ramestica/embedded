@@ -13,22 +13,22 @@
 //
 // Support stuff
 //
-#include <Utils.h>
+#include <Support/Utils.h>
 
 //
 // Target stuff
 //
-#include <GPIO.h>
+#include <Target/GPIO.h>
 
 //
 // Logic stuff
 //
-#include <Host.h>
+#include <Logic/Host.h>
 
 //
 // Local stuff
 //
-#include "PulseModulation.h"
+#include <Logic/PulseModulation.h>
 
 using namespace std;
 using namespace RAM::Support::Error;

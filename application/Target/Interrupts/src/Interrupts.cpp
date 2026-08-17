@@ -16,7 +16,7 @@
 //
 // Local stuff
 //
-#include "Interrupts.h"
+#include <Target/Interrupts.h>
 
 #ifdef TARGET_nano328p
 #elif defined(TARGET_tivac) || defined(TARGET_minim4) || defined(TARGET_discovery)

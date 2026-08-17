@@ -3,6 +3,7 @@ EXECUTABLES_L = delayus
 #DEBUG=on
 
 delayus_SOURCES = delayus.cpp
+delayus_LIBS = driver
 
 include $(EMBEDDED_ROOT)/include/Makefile.mk
 

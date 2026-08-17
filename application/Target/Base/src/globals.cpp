@@ -12,7 +12,7 @@
 //
 // Local stuff
 //
-#include "Target.h"
+#include <Target/Target.h>
 
 #if defined(TARGET_nano328p) || defined(TARGET_tivac) || defined(TARGET_minim4) || defined(TARGET_discovery)
 #else

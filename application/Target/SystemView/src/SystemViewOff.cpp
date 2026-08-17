@@ -8,7 +8,7 @@
 //
 // Local stuff
 //
-#include "SystemView.h"
+#include <Target/SystemView.h>
 
 static inline void systemViewNop() { static_assert(true, "nopzxz"); }
 static inline void systemViewUnsignedNop(unsigned int) { static_assert(true, "nopzxz"); }

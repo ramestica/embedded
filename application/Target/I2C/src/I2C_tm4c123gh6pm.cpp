@@ -1,13 +1,13 @@
 //
 // Support stuff
 //
-#include <ErrorCodes.h>
-#include <Utils.h>
+#include <Support/ErrorCodes.h>
+#include <Support/Utils.h>
 
 //
 // Local stuff
 //
-#include "TargetI2C.h"
+#include <Target/I2C.h>
 
 using namespace RAM::Target;
 

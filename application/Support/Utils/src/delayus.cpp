@@ -42,7 +42,7 @@
 //
 // Local stuff
 //
-#include "Utils.h"
+#include <Support/Utils.h>
 
 #if defined(TARGET_tivac) || defined(TARGET_minim4) || defined(TARGET_discovery)
 static void __attribute__((naked)) SysCtlDelay(uint32_t l)

@@ -2,7 +2,7 @@
  */
 
 #ifndef __cplusplus
-#errojnr this compilation unit requires c++
+#error this compilation unit requires c++
 #endif
 
 //
@@ -17,9 +17,9 @@
 //
 // Target stuff
 //
-#include <target/Target.h>
-#include <target/SystemTick.h>
-#include <Main.h>
+#include <Target/Target.h>
+#include <Target/SystemTick.h>
+#include <Target/Main.h>
 
 //
 // CMSIS stuff
@@ -33,20 +33,20 @@
 //
 // Logic stuff
 //
-#include <Host.h>
-#include <MainLoop.h>
-#include <PulseModulation.h>
+#include <Logic/Host.h>
+#include <Logic/MainLoop.h>
+#include <Logic/PulseModulation.h>
 
 //
 // sensors stuff
 //
-#include <MPU6050.h>
+#include <Sensors/MPU6050.h>
 
 //
 // Control stuff
 //
-#include <IMU.h>
-#include <PID.h>
+#include <Control/IMU.h>
+#include <Control/PID.h>
 
 //
 // Local stuff
@@ -361,7 +361,7 @@ void setupRc()
         // iterate now for a couple of seconds updating motors with
         // the current throttle reading
         //
-        for ( unsigned i = =0; i < 1000; ++i )
+        for ( unsigned i = 0; i < 1000; ++i )
         {
             ppm->readout(frame, resync, rcTimings.m_objects);
             

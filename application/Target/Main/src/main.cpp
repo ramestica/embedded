@@ -8,12 +8,12 @@
 //
 // Target stuff
 //
-#include <target/Target.h>
+#include <Target/Target.h>
 
 //
 // Local stuff
 //
-#include "Main.h"
+#include <Target/Main.h>
 
 using namespace RAM::Target;
 

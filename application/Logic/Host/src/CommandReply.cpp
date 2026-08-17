@@ -7,12 +7,12 @@
 
 //
 // Library stuff
-#include <ErrorCodes.h>
+#include <Support/ErrorCodes.h>
 
 //
 // Local stuff
 //
-#include "Host.h"
+#include <Logic/Host.h>
 
 static RAM::Logic::Host::DataStream *dataStream_p = nullptr;
 

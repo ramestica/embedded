@@ -7,7 +7,7 @@
 //
 // Local stuff
 //
-#include "SampleStatistics.h"
+#include <Logic/SampleStatistics.h>
 
 using namespace std;
 using namespace RAM::Logic;

@@ -11,7 +11,7 @@
 //
 // Base stuff
 //
-#include <ErrorCodes.h>
+#include <Support/ErrorCodes.h>
 
 //
 // Target stuff
@@ -20,7 +20,7 @@
 //
 // Local stuff
 //
-#include "Utils.h"
+#include <Support/Utils.h>
 
 //
 // Global static variables

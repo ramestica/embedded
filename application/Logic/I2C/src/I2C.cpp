@@ -1,12 +1,12 @@
 //
 // Target stuff
 //
-#include <TargetI2C.h>
+#include <Target/I2C.h>
 
 //
 // Local stuff
 //
-#include "I2C.h"
+#include <Logic/I2C.h>
 
 using namespace RAM::Logic::Host::CommandReply;
 namespace Target = RAM::Target::I2C;

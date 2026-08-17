@@ -45,15 +45,16 @@ conan-install: $(BUILD_DIR)/generators/conan_toolchain.cmake
 # CMakeUserPresets.json can only list flavors that have actually been
 # installed (cmake errors on a dangling include), and Conan can't manage it
 # for us here — conanfile.py's own directory has no CMakeLists.txt, which is
-# a precondition for Conan's auto-include. So the Makefile owns it instead,
-# appending this flavor's entry idempotently once it exists.
+# a precondition for Conan's auto-include. So the Makefile owns it instead:
+# drop any entry whose generators file no longer exists (e.g. after
+# distclean, which doesn't touch this file), then add the current flavor.
 sync-presets: conan-install
 	@python3 -c "\
 import json, os; \
 p = 'CMakeUserPresets.json'; \
 entry = 'build/$(BUILD_TYPE)/$(FLAVOR)/generators/CMakePresets.json'; \
 data = json.load(open(p)) if os.path.exists(p) else {'version': 4, 'vendor': {'conan': {}}, 'include': []}; \
-data.setdefault('include', []); \
+data['include'] = [e for e in data.get('include', []) if os.path.exists(e)]; \
 (entry in data['include']) or data['include'].append(entry); \
 json.dump(data, open(p, 'w'), indent=4)"
 

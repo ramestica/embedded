@@ -1,0 +1,137 @@
+#ifndef _UART_H_
+#define _UART_H_
+
+//
+// System stuff
+//
+
+//
+// Base stuff
+//
+#include <Support/Utils.h>
+
+//
+// Target stuff
+//
+#include <Target/Interrupts.h>
+#include <Target/UART.h>
+
+//
+// Library stuff
+// 
+#include <Support/ErrorCodes.h>
+#include <Logic/Host.h>
+
+//
+// Local stuff
+//
+
+namespace RAM
+{
+    namespace Logic
+    {
+        namespace UART
+        {
+            /** Base class to hold most of the functionality except by the isr.
+             */
+            class SerialStreamer: public RAM::Logic::Host::DataStream
+            {
+            public:
+                SerialStreamer():
+                    RAM::Logic::Host::DataStream(9, 9)
+                {;}
+
+                inline bool isTransmitChannelEmpty()
+                {
+                    return RAM::Target::UART::isTxFifoEmpty(m_uart);
+                }
+
+                inline void writeIntoChannel(const char c)
+                {
+                    RAM::Target::UART::write(m_uart, c);
+                }
+
+            protected:
+                
+                RAM::Target::UART::Module m_uart;
+
+            };
+
+            /** Derived class to basically implement just the isr. The template
+             ** parameters makes possible a unique static method per interrupt.
+             */
+            template <RAM::Target::UART::ModuleId UARTN>
+            class Module: public SerialStreamer
+            {
+            public:
+
+                Module(const unsigned baud):
+                    SerialStreamer()
+                {
+                    if ( RAM::Target::UART::configure(UARTN, m_uart, baud, isr) )
+                    {
+                        RAM::Support::Error::longjmp(UART_ERR_CONFIG);
+                    }
+
+                    m_this_p = this;
+                }
+            
+            private:
+
+                static Module<UARTN> *m_this_p;
+
+                static void isr()
+                {
+                    static unsigned count;
+                    static char buffer[16];
+                
+                    //
+                    // clear all asserted interrupts
+                    //
+                    bool rx, rxto, tx;
+                    RAM::Target::UART::iclear(m_this_p->m_uart, rx, rxto, tx);
+
+                    if ( rx || rxto )
+                    {
+                        count =
+                            RAM::Target::UART::read(m_this_p->m_uart, buffer, 16);
+                    
+                        if ( m_this_p->m_rxq.push(buffer, count) != count )
+                        {
+                            ++m_this_p->m_errorCountRx;
+                        }
+                    }
+
+                    if ( tx )
+                    {
+                        count = m_this_p->m_txq.pop(buffer, 16);
+
+                        //
+                        // while writing into the fifo it could happen that the
+                        // transmition happens faster than the isr execution and a
+                        // second instance of the interrupt would happen. Avoid
+                        // interrupt stacking by disabling the module's interrupts
+                        // while pushing into the fifo.
+                        //
+                        RAM::Target::UART::write(
+                            m_this_p->m_uart,
+                            buffer,
+                            count,
+                            true);
+
+                    }
+                }
+            };
+
+            //
+            // static variable definition
+            //
+            template <RAM::Target::UART::ModuleId UARTN>
+            Module<UARTN> *Module<UARTN>::m_this_p;
+        }
+    }
+}
+
+#endif /* _UART_H_ */
+
+/*___oOo__*/

@@ -8,8 +8,8 @@
 //
 // Target stuff
 //
-#include <Utils.h>
-#include <Interrupts.h>
+#include <Support/Utils.h>
+#include <Target/Interrupts.h>
 
 //
 // System stuff
@@ -19,7 +19,7 @@
 //
 // Local stuff
 //
-#include "GPIO.h"
+#include <Target/GPIO.h>
 
 using namespace std;
 using namespace RAM::Target;

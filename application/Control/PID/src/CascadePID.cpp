@@ -21,7 +21,7 @@
 //
 // Local stuff
 //
-#include "PID.h"
+#include <Control/PID.h>
 
 using namespace RAM::Control;
 

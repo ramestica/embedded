@@ -8,7 +8,7 @@
 //
 // Target stuff
 //
-#include <Interrupts.h>
+#include <Target/Interrupts.h>
 
 //
 // System stuff
@@ -17,7 +17,7 @@
 //
 // Local stuff
 //
-#include "SystemTick.h"
+#include <Target/SystemTick.h>
  
 using namespace std;
 using namespace RAM::Target;

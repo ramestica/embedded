@@ -13,13 +13,13 @@
 //
 // Library stuff
 //
-#include <ErrorCodes.h>
-#include <Utils.h>
+#include <Support/ErrorCodes.h>
+#include <Support/Utils.h>
 
 //
 // Local stuff
 //
-#include "Complementary.h"
+#include <Control/Complementary.h>
 
 using namespace RAM::Control::Filter;
 

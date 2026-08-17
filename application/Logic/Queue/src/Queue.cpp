@@ -14,12 +14,12 @@
 //
 // Support stuff
 //
-#include <Utils.h>
+#include <Support/Utils.h>
 
 //
 // Local stuff
 //
-#include "Queue.h"
+#include <Logic/Queue.h>
 
 #define QUEUE_DEFAULT_NSIZE 8
 

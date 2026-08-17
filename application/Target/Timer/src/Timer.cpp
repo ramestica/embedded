@@ -8,7 +8,7 @@
 //
 // Target stuff
 //
-#include <GPIO.h>
+#include <Target/GPIO.h>
 
 //
 // System stuff
@@ -17,7 +17,7 @@
 //
 // Local stuff
 //
-#include "Timer.h"
+#include <Target/Timer.h>
 
 using namespace RAM::Target;
 

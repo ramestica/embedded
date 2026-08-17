@@ -8,7 +8,7 @@
 //
 // Target stuff
 //
-#include <Interrupts.h>
+#include <Target/Interrupts.h>
 
 //
 // System stuff
@@ -17,7 +17,7 @@
 //
 // Local stuff
 //
-#include "TargetUART.h"
+#include <Target/UART.h>
 
 using namespace RAM::Target;
 

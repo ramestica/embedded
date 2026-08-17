@@ -24,7 +24,7 @@
 //
 // Local stuff
 //
-#include "IMU.h"
+#include <Control/IMU.h>
 
 using namespace RAM::Control::IMU;
 

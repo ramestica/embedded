@@ -12,7 +12,7 @@
 //
 #include <driverlib/sysctl.h>
 
-#include "tm4c123gh6pm.h"
+#include <Target/tm4c123gh6pm.h>
 
 uint32_t SystemCoreClock = 0;
 uint32_t SystemCoreClockCyclesPerMicrosecond;

@@ -9,7 +9,7 @@
 //
 // Local stuff
 //
-#include "tm4c123gh6pm.h"
+#include <Target/tm4c123gh6pm.h>
 
 //
 // application's entry point

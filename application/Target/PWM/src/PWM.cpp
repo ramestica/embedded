@@ -22,7 +22,7 @@
 //
 // Local stuff
 //
-#include "PWM.h"
+#include <Target/PWM.h>
 
 using namespace RAM::Target;
 

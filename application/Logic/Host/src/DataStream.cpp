@@ -16,7 +16,7 @@
 //
 // Local stuff
 //
-#include "Host.h"
+#include <Logic/Host.h>
 
 using namespace RAM::Logic::Host;
 

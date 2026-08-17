@@ -1,21 +1,21 @@
 //
 // Target stuff
 //
-#include <target/SystemTick.h>
+#include <Target/SystemTick.h>
 
 //
 // Library stuff
 //
-#include <Host.h>
-#include <I2C.h>
-#include <Endianness.h>
-#include <Host.h>
-#include <MainLoop.h>
+#include <Logic/Host.h>
+#include <Logic/I2C.h>
+#include <Logic/Endianness.h>
+#include <Logic/Host.h>
+#include <Logic/MainLoop.h>
 
 //
 // Local stuff
 //
-#include "MPU6050.h"
+#include <Sensors/MPU6050.h>
 
 using namespace RAM::Support;
 using namespace RAM::Device;

@@ -16,7 +16,7 @@
 //
 // Local stuff
 //
-#include "GPIO.h"
+#include <Target/GPIO.h>
 
 using namespace std;
 using namespace RAM::Target;

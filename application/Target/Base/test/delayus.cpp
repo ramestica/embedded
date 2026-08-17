@@ -12,10 +12,11 @@
 //
 // Target stuff
 //
-#include <Target.h>
-#include <GPIO.h>
-#include <TargetTimer.h>
-#include <Main.h>
+#include <Target/Target.h>
+#include <Target/GPIO.h>
+#include <Target/SystemTick.h>
+#include <Target/Timer.h>
+#include <Target/Main.h>
 
 //
 // Local stuff
@@ -42,15 +43,9 @@ void Main::setup()
 {
     StatusLED::enable();
 
-    StatusLED::on();
-
     for ( int i = 0; i < 1; ++i )
     {
-//        delayus(500000);
-
         StatusLED::off();
-
-//        delayus(500000);
 
         StatusLED::on();
     }
@@ -77,9 +72,9 @@ void Main::setup()
 //-------------------------------------------------------------------------------
 void Main::loop()
 {
-    StatusLED::toggle();
+    StatusLED::off();
      
-    delayus(150);
+	SystemTick::delayus(4000000);
      
     return;
 } 

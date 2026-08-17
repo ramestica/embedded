@@ -6,25 +6,25 @@
 //
 // Support stuff
 //
-#include <Utils.h>
+#include <Support/Utils.h>
 
 //
 // Target stuff
 //
-#include <target/SystemTick.h>
-#include <GPIO.h>
+#include <Target/SystemTick.h>
+#include <Target/GPIO.h>
 
 //
 // Library stuff
 //
-#include <ErrorCodes.h>
-#include <UART.h>
+#include <Support/ErrorCodes.h>
+#include <Logic/UART.h>
 
 //
 // Local stuff
 //
-#include "I2C.h"
-#include "MainLoop.h"
+#include <Logic/I2C.h>
+#include <Logic/MainLoop.h>
 
 //
 // identify possible arguments to STATS command
