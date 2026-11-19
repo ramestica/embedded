@@ -74,7 +74,7 @@ bashmake all
 This runs cmake --build build/Release --parallel 12, which drives cmake --build build/Release --target devenv_image under the hood via your emb_container/emb_module machinery — building the devenv stage of Dockerfile.devenv, consuming uv.lock/conan.lock in frozen/pinned mode.
 
 3. Launch the container:
-bashbuild/Release/bin/start_devenv_container -s ~/src
+bashbuild/Release/bin/start_devenv_container -s --mount ~/src:/home/$USER/src
 
 4. Inside the container, on first login, Conan profiles (default, cortex-m4) and the Python venv are already active. For C/C++ work:
 

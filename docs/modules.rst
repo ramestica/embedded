@@ -207,3 +207,70 @@ If desired, this structure can be generalized into a full ``embedded_module()`` 
 - multiple implementations per module
 - mixed-language modules (C/C++/Python/scripts)
 - clean dependency management without CMake complexity explosion
+
+Module Layering
+===============
+
+The module layering, from bottom to top.
+
+The contract (``devices/i2c/``)
+-------------------------------
+
+A header-only interface, ``i2c_hal.h``, defining the abstract I2C
+transaction primitives (``write``, ``write_read`` for repeated-start) and a
+status enum. It is a CMake ``INTERFACE`` library (``i2c``), depends on
+nothing, and knows about neither vendors nor slaves. This is the seam the
+whole design turns on.
+
+The implementations (``devices/hal/``)
+--------------------------------------
+
+One backend per platform, each providing the same ``i2c-hal`` target by
+fulfilling the contract:
+
+- ``tm4c123/`` — wraps TivaWare driverlib
+- ``stm32f1/`` — wraps ST LL
+- ``linux/`` — wraps ``/dev/i2c`` or a USB-I2C bridge
+
+Which one compiles is a **configure-time choice** via
+``-DI2C_HAL=<backend>``, dispatched in ``devices/hal/CMakeLists.txt``. Each
+links the contract (``i2c``) but never the protocol above it — the HAL does
+not know the FPGA exists.
+
+The protocol (``control/mac/``)
+-------------------------------
+
+``fpga_cmd.c``, the command/reply logic for the Spartan-6 slave: the
+``OK`` / ``ERR`` / ``NOREPLY`` trichotomy, timeouts, retries, idempotency. It
+depends *only* on the contract, so it is **freestanding and dual-target** —
+the exact same source compiles for Cortex-M firmware and for the host CLI.
+That portability is only possible because it talks to ``i2c_hal.h``, never
+to a specific peripheral.
+
+The applications (leaves)
+-------------------------
+
+Firmware apps (``tm4c123/fpga-ctrl/``, etc.) and the host CLI
+(``tools/macctl/``) each link ``mac`` + ``i2c-hal``, supplying a concrete
+backend to satisfy the protocol layer's abstract dependency. The dependency
+graph is ``mac → i2c ← i2c-hal``, joined only in the final executable.
+
+Holding principles
+------------------
+
+- **Dependencies point downward toward the abstract contract.** Protocol and
+  HAL both depend on ``i2c``, neither on each other — so a new slave module
+  or a new MCU slots in without touching anything else.
+- **The contract stays minimal.** Only transaction primitives cross it; init
+  (clock/pin setup) stays platform-specific and is called directly from each
+  app's ``main()``, never abstracted.
+
+Payoffs
+-------
+
+- Because the CLI talks to both the FPGA and MCU directly, it is just another
+  HAL backend (``linux``) rather than special-cased code.
+- Because the protocol layer depends only on the contract, a ``mock`` HAL
+  makes ``control/mac`` unit-testable on the host under ``ctest``, pinning
+  down the retry and ``NOREPLY`` edge cases with no hardware.
+  

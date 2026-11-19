@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1.4
 #        _    _
 #    ___| |  | |_   _  __ _  __ _ _ __
 #   / _ \ |  | | | | |/ _` |/ _` | '__|
@@ -8,6 +9,15 @@
 #  Copyright (C) 2026 rodrigo amestica
 #  SPDX-License-Identifier: Apache-2.0
 
+# ── libjpeg-turbo with the LIBJPEGTURBO_6.2 symbol version (--photomatix) ────
+# Ubuntu dropped the libjpeg62-turbo compat package (its own libjpeg62 is the
+# plain, non-turbo IJG build, missing the symbol version PhotomatixCL needs);
+# Debian still ships it, so the one shared object is pulled from there.
+FROM debian:bookworm AS photomatix_libjpeg
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends libjpeg62-turbo \
+    && rm -rf /var/lib/apt/lists/*
+
 # ============================================================================
 # Stage: base — packages and toolchains common to both lockgen and devenv
 # ============================================================================
@@ -16,9 +26,12 @@ FROM ubuntu:24.04 AS base
 RUN apt-get update && apt-get install -y --no-install-recommends \
     zsh \
     curl \
+    file \
     iputils-ping \
     wget \
     openssh-server \
+    xauth \
+    less \
     sudo \
     tree \
     tmux \
@@ -27,19 +40,94 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     cmake \
     ninja-build \
     gdb \
+    gdb-multiarch \
     pkg-config \
     ca-certificates \
     git \
     netcat-openbsd \
     openocd \
-    && rm -rf /var/lib/apt/lists/*
+    fd-find \
+    && rm -rf /var/lib/apt/lists/* \
+    && ln -s /usr/bin/fdfind /usr/local/bin/fd   # apt's package/binary is 'fdfind', not 'fd'
 
+# ── haskell ───────────────────────────────────────────────────────────────────
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libgmp-dev \
+    libnuma-dev \
+    zlib1g-dev \
+    && rm -rf /var/lib/apt/lists/*
+ENV BOOTSTRAP_HASKELL_NONINTERACTIVE=1 \
+    BOOTSTRAP_HASKELL_INSTALL_HLS=1 \
+    GHCUP_INSTALL_BASE_PREFIX=/usr/local
+RUN curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org | sh
+
+# ── Make ghcup, ghc, cabal, hls available to all users/shells ─────────────────
+ENV PATH="/usr/local/.ghcup/bin:${PATH}"
+
+# ── fzf toll ──────────────────────────────────────────────────────────────────
 RUN FZF_VERSION=$(curl -s "https://api.github.com/repos/junegunn/fzf/releases/latest" | grep -Po '"tag_name": "v\K[0-9.]+') && \
     curl -Lo fzf.tar.gz "https://github.com/junegunn/fzf/releases/latest/download/fzf-${FZF_VERSION}-linux_amd64.tar.gz" && \
     tar -xzf fzf.tar.gz -C /usr/local/bin/ && \
     rm fzf.tar.gz
 
-RUN mkdir /var/run/sshd
+# Install oh-my-zsh directly into /etc/skel by overriding HOME/ZSH for the
+# install script — avoids installing into /root and needing a later path fix.
+RUN HOME=/etc/skel ZSH=/etc/skel/.oh-my-zsh \
+    sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" \
+    "" --unattended --keep-zshrc \
+    && printf '%s\n' \
+        "alias ls='ls --color=auto'" \
+        "alias ll='ls -la --color=auto'" \
+        "psg() {" \
+        '    ps -afx -o user,pid,ppid,etime,pri,pcpu,pmem,rss,vsize,stat,comm | (read -r h; echo "$h"; grep -i "$@")' \
+        "}" \
+        > /etc/skel/.oh-my-zsh/custom/aliases.zsh \
+    && chmod -R go+rX /etc/skel/.oh-my-zsh
+
+# ── align tmux version to that on macos ───────────────────────────────────────
+RUN apt-get update \
+    && apt-get install -y libevent-dev libncurses-dev bison \
+    && curl -LO https://github.com/tmux/tmux/releases/download/3.5a/tmux-3.5a.tar.gz \
+    && tar xzf tmux-3.5a.tar.gz \
+    && cd tmux-3.5a \
+    && ./configure \
+    && make -j"$(nproc)" \
+    && make install   # lands in /usr/local/bin, shadows apt's tmux \
+    && cd .. && rm -rf tmux-3.5a
+
+# Node.js (LTS) + npm
+RUN curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - \
+    && apt-get install -y nodejs \
+    && rm -rf /var/lib/apt/lists/*
+
+# uv: system-wide install
+ENV UV_INSTALL_DIR=/usr/local/bin
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Every uv-provisioned Python (project venv AND tool venvs like Conan's)
+# must land under a system path we control and can chmod for all users.
+ENV UV_PYTHON_INSTALL_DIR=/usr/local/share/uv/python
+
+# Conan 2: system-wide via uv tool
+ENV UV_TOOL_DIR=/usr/local/share/uv/tools \
+    UV_TOOL_BIN_DIR=/usr/local/bin
+RUN uv tool install "conan>=2.0,<3.0"
+
+ARG EMBEDDED_PYTHON_VERSION=3.12
+RUN uv python install "${EMBEDDED_PYTHON_VERSION}"
+
+# LSP support
+RUN uv pip install basedpyright ruff --system --break-system-packages \
+    && apt update \
+    && DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends clangd \
+    && rm -rf /var/lib/apt/lists/* \
+    && npm install -g bash-language-server
+
+# Claude Agent ACP adapter for agent-shell
+RUN npm install -g @agentclientprotocol/claude-agent-acp \
+    && npm install -g @anthropic-ai/claude-code
+
+RUN mkdir -p /var/run/sshd
 
 RUN sed -i \
     -e 's/^#\?PasswordAuthentication.*/PasswordAuthentication no/' \
@@ -59,22 +147,6 @@ ENV PATH="/opt/arm-gnu-toolchain/bin:${PATH}"
 # be written to /etc/environment, which PAM applies to every login
 # session regardless of shell startup files.
 RUN echo 'PATH="/opt/arm-gnu-toolchain/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"' > /etc/environment
-
-# uv: system-wide install
-ENV UV_INSTALL_DIR=/usr/local/bin
-RUN curl -LsSf https://astral.sh/uv/install.sh | sh
-
-# Every uv-provisioned Python (project venv AND tool venvs like Conan's)
-# must land under a system path we control and can chmod for all users.
-ENV UV_PYTHON_INSTALL_DIR=/usr/local/share/uv/python
-
-# Conan 2: system-wide via uv tool
-ENV UV_TOOL_DIR=/usr/local/share/uv/tools \
-    UV_TOOL_BIN_DIR=/usr/local/bin
-RUN uv tool install "conan>=2.0,<3.0"
-
-ARG EMBEDDED_PYTHON_VERSION=3.12
-RUN uv python install "${EMBEDDED_PYTHON_VERSION}"
 
 # ============================================================================
 # Stage: lockgen — everything needed to GENERATE uv.lock / conan.lock.
@@ -133,6 +205,35 @@ RUN cd /opt/conan-warm \
     && rm -rf /opt/conan-warm
 
 RUN chmod -R a+rX /usr/local/share/conan2
+
+# ---- PhotomatixCL (--photomatix) ----
+# Pinned to the exact release the current license token was activated
+# against; a different build is a different fingerprint to the license
+# server, and would likely need a fresh activation.
+ARG INSTALL_PHOTOMATIX=0
+ARG PHOTOMATIX_URL=https://hdrsoft.com/download/linux/PhotomatixCL-arm-8.0.2.tar.gz
+ARG PHOTOMATIX_SHA256=7cd8fc08587272a17319f0fc0a8cba5e90925c9636db49103c12b834c80a0d56
+RUN --mount=type=bind,from=photomatix_libjpeg,source=/usr/lib/aarch64-linux-gnu,target=/mnt/photomatix_libjpeg \
+    if [ "${INSTALL_PHOTOMATIX}" = "1" ]; then \
+        apt-get update \
+        && apt-get install -y --no-install-recommends \
+            liblcms2-2 \
+            libtiff6 \
+            liblensfun1 \
+            libcurl3t64-gnutls \
+            libgomp1 \
+        && rm -rf /var/lib/apt/lists/* \
+        && cp -P /mnt/photomatix_libjpeg/libjpeg.so.62* /usr/lib/aarch64-linux-gnu/ \
+        && ldconfig \
+        && curl -fsSL -o /tmp/photomatix.tar.gz "${PHOTOMATIX_URL}" \
+        && echo "${PHOTOMATIX_SHA256}  /tmp/photomatix.tar.gz" | sha256sum -c - \
+        && mkdir -p /opt/PhotomatixCL \
+        && tar -xzf /tmp/photomatix.tar.gz -C /opt/PhotomatixCL --strip-components=1 \
+        && rm /tmp/photomatix.tar.gz \
+        && echo 'export PATH="/opt/PhotomatixCL:$PATH"' >> /etc/skel/.profile \
+        && echo 'PATH="/opt/PhotomatixCL:/opt/arm-gnu-toolchain/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"' \
+            > /etc/environment ; \
+    fi
 
 # ---- Login shell defaults for every future user ----
 RUN echo '[ -f /opt/venvs/embedded/bin/activate ] && . /opt/venvs/embedded/bin/activate' \

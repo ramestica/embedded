@@ -10,25 +10,31 @@
 
 # Makefile — thin wrapper around CMake, configured via Conan profiles.
 #
-# FLAVOR selects the Conan host profile / toolchain:
+# TARGET selects the Conan host profile / toolchain:
 #   host      — native compiler, no cross toolchain (default)
 #   cortex-m4 — arm-none-eabi cross toolchain (application/'s target)
 BUILD_TYPE ?= Release
-FLAVOR     ?= host
-BUILD_DIR  := build/$(BUILD_TYPE)/$(FLAVOR)
+TARGET     ?= host
+BUILD_DIR  := build/$(BUILD_TYPE)/$(TARGET)
 PREFIX     ?= /usr/local
 JOBS       ?= $(shell nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4)
 
-CONAN_HOST_PROFILE := $(if $(filter cortex-m4,$(FLAVOR)),cortex-m4,default)
-PRESET := conan-$(FLAVOR)-$(shell echo $(BUILD_TYPE) | tr '[:upper:]' '[:lower:]')
+# containers/devenv (Docker dev-container staging) needs no C/C++ toolchain,
+# so it gets its own build dir configured with EMB_BUILD_APPLICATION=OFF --
+# keeps `make lockgen-image` / the devenv image build working on a host with
+# no Conan installed at all.
+DEVENV_BUILD_DIR := build/devenv
+
+CONAN_HOST_PROFILE := $(if $(filter cortex-m4,$(TARGET)),cortex-m4,default)
+PRESET := conan-$(TARGET)-$(shell echo $(BUILD_TYPE) | tr '[:upper:]' '[:lower:]')
 
 # Bare-metal targets have no libc syscall stubs until a real executable links
 # one in, so CMake's default compiler probe needs relaxing — see
 # cmake/toolchain/cortex-m4-user.cmake. Kept out of the checked-in cortex-m4
 # profile since the absolute path only makes sense at invocation time.
-CONAN_USER_TOOLCHAIN := $(if $(filter cortex-m4,$(FLAVOR)),-c 'tools.cmake.cmaketoolchain:user_toolchain=["$(CURDIR)/cmake/toolchain/cortex-m4-user.cmake"]')
+CONAN_USER_TOOLCHAIN := $(if $(filter cortex-m4,$(TARGET)),-c 'tools.cmake.cmaketoolchain:user_toolchain=["$(CURDIR)/cmake/toolchain/cortex-m4-user.cmake"]')
 
-.PHONY: all conan-install sync-presets configure build install compile-commands lockgen-image update-lockfiles clean distclean help
+.PHONY: all conan-install sync-presets configure build install compile-commands devenv-configure lockgen-image update-lockfiles clean distclean help
 
 all: build
 
@@ -42,17 +48,17 @@ $(BUILD_DIR)/generators/conan_toolchain.cmake: containers/devenv/config/conanfil
 
 conan-install: $(BUILD_DIR)/generators/conan_toolchain.cmake
 
-# CMakeUserPresets.json can only list flavors that have actually been
+# CMakeUserPresets.json can only list targets that have actually been
 # installed (cmake errors on a dangling include), and Conan can't manage it
 # for us here — conanfile.py's own directory has no CMakeLists.txt, which is
 # a precondition for Conan's auto-include. So the Makefile owns it instead:
 # drop any entry whose generators file no longer exists (e.g. after
-# distclean, which doesn't touch this file), then add the current flavor.
+# distclean, which doesn't touch this file), then add the current target.
 sync-presets: conan-install
 	@python3 -c "\
 import json, os; \
 p = 'CMakeUserPresets.json'; \
-entry = 'build/$(BUILD_TYPE)/$(FLAVOR)/generators/CMakePresets.json'; \
+entry = 'build/$(BUILD_TYPE)/$(TARGET)/generators/CMakePresets.json'; \
 data = json.load(open(p)) if os.path.exists(p) else {'version': 4, 'vendor': {'conan': {}}, 'include': []}; \
 data['include'] = [e for e in data.get('include', []) if os.path.exists(e)]; \
 (entry in data['include']) or data['include'].append(entry); \
@@ -72,11 +78,11 @@ build: configure
 install: build
 	cmake --install $(BUILD_DIR)
 
-# Merges every configured flavor's compile_commands.json into one at the repo
+# Merges every configured target's compile_commands.json into one at the repo
 # root, for eglot/clangd to see the whole tree. Run after configuring
-# whichever flavors you want covered (e.g. make configure; make configure
-# FLAVOR=cortex-m4; make compile-commands). Files built under more than one
-# flavor (host-portable modules) keep whichever flavor sorts first.
+# whichever targets you want covered (e.g. make configure; make configure
+# TARGET=cortex-m4; make compile-commands). Files built under more than one
+# target (host-portable modules) keep whichever target sorts first.
 compile-commands:
 	@python3 -c "\
 import json, glob; \
@@ -85,10 +91,18 @@ files = sorted(glob.glob('build/*/*/compile_commands.json')); \
 entries = [e for f in files for e in json.load(open(f))]; \
 [(merged.append(e), seen.add(e['file'])) for e in entries if e['file'] not in seen]; \
 json.dump(merged, open('compile_commands.json', 'w'), indent=2); \
-print(f'{len(merged)} entries from {len(files)} flavor(s) -> compile_commands.json')"
+print(f'{len(merged)} entries from {len(files)} target(s) -> compile_commands.json')"
 
-lockgen-image: configure
-	docker build --target lockgen -t devenv:lockgen -f $(BUILD_DIR)/config/Dockerfile.devenv $(BUILD_DIR)
+# Configures only containers/devenv (Dockerfile.devenv, compose template,
+# entrypoint/container scripts) -- skips application/, so no Conan/host
+# toolchain is required. See DEVENV_BUILD_DIR above.
+$(DEVENV_BUILD_DIR)/CMakeCache.txt:
+	cmake -S . -B $(DEVENV_BUILD_DIR) -DEMB_BUILD_APPLICATION=OFF
+
+devenv-configure: $(DEVENV_BUILD_DIR)/CMakeCache.txt
+
+lockgen-image: devenv-configure
+	docker build --target lockgen -t devenv:lockgen -f $(DEVENV_BUILD_DIR)/config/Dockerfile.devenv $(DEVENV_BUILD_DIR)
 
 update-lockfiles: lockgen-image
 	docker run --rm -v "$(CURDIR):/workspace" -w /workspace devenv:lockgen \
@@ -111,11 +125,11 @@ distclean:
 help:
 	@echo "Targets:"
 	@echo "  all        - configure + build (default)"
-	@echo "  build      - build using BUILD_TYPE=$(BUILD_TYPE) FLAVOR=$(FLAVOR)"
+	@echo "  build      - build using BUILD_TYPE=$(BUILD_TYPE) TARGET=$(TARGET)"
 	@echo "  install    - build then install to PREFIX=$(PREFIX)"
 	@echo "  clean      - clean object files via CMake"
 	@echo "  distclean  - remove the entire build/ directory"
 	@echo ""
-	@echo "Override with: make BUILD_TYPE=Debug FLAVOR=cortex-m4 PREFIX=/opt/foo"
+	@echo "Override with: make BUILD_TYPE=Debug TARGET=cortex-m4 PREFIX=/opt/foo"
 
 #___oOo___
